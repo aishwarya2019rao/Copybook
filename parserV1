@@ -1,0 +1,116 @@
+import CopyBookParser
+from CopyBookCompare import CopyBookCompare
+from DataFile import DataFile 
+
+from CopyBookField import CopyBookField
+
+class CopybookParser:
+    def __init__(self, copybook):
+        self.copybook = copybook
+        self.current_field = None
+        self.copybook_fields = []
+
+    def parse_fields(self):
+        with open(self.copybook.cpybook_path, 'r') as cpybook:
+            for line in cpybook:
+                stripped_line = line[6:].strip()
+                self.process_line(stripped_line)
+
+    def process_line(self, line):
+        if self.is_comment(line):
+            return
+        if self.is_new_record(line):
+            self.copybook_fields.append(self.current_field)
+            field = self.create_copybook_field(line)
+            self.current_field = field
+        if self.is_sub_record(line):
+            pass
+            # sub_record = self.create_copybook_subfield(line)
+            # self.current_field.default_values.append(sub_record)
+
+    def is_comment(self, line):
+        return line[6] == '*'
+
+    def is_new_record(self, line):
+        if len(line) >= 2:
+            return line[0:2] == '05'
+
+        return False
+
+    def is_sub_record(self, line):
+        if len(line) >= 2:
+            return line[0:2] == '10'
+
+        return False
+
+    def create_copybook_field(self, line):
+        sub_fields = line.split(' ')
+
+        level = sub_fields[0]
+        name = sub_fields[1]
+        pic_value = sub_fields[3]
+
+        return CopyBookField(level, name, pic_value)
+
+    def create_copybook_subfield(self, line):
+        pass
+		
+class CopyBookField:
+    def __init__(self, level, name, pic_value):
+        self.level = level
+        self.name = name
+        # The PIC X/9 - How to store negative/decimal values (i.e. -9(11)v99)
+        self.pic_value = pic_value
+        # PIC X(20) - only store the '20'
+        self.size = 0
+        # The '10' Level records beneath the '05' Level records
+        self.default_values = []
+
+    def to_string(self):
+        return "{}   {}   {}".format(self.level, self.name, self.pic_value)
+		  
+class CopyBookCompare:
+    def __init__(self, copybook, data_file):
+        self.copybook = copybook
+        self.data_file = data_file
+
+    def compare_copybook_with_data(self):
+        pass
+
+    def display_first_line(self):
+        pass
+
+class DataFile:
+    def __init__(self, data_file_path):
+        self.data_file_path = data_file_path
+		
+		
+class CopyBook:
+    def __init__(self, copybook_path):
+        # Every '05' Level Record in a Copybook
+        self.copybook_fields = []
+        # Use current directory for testing
+        self.copybook_path = copybook_path
+
+    def display_copybook_fields(self, show_with_attrs=False):
+        print("\n\nCopybook Fields:")
+        for field in self.copybook_fields:
+            if show_with_attrs:
+                field_content = field.to_string()
+            else:
+                field_content = field.name
+            print("  {}".format(field_content))
+
+    def set_fields(self, fields):
+        self.copybook_fields = fields
+		
+def main():
+    cpybook_path = 'text.cpy'
+    data_file_path = 'test.txt'
+    
+    cpybook_parser = CopyBookParser.CopyBookParser(cpybook_path, data_file_path)
+    cpybook = cpybook_parser.create_copybook()
+    data_file = DataFile(data_file_path)
+
+    cpybook_comparer = CopyBookCompare(cpybook, data_file)
+	
